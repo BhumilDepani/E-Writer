@@ -1,17 +1,11 @@
 #include "stm32f4xx.h"
 
 GPIO_InitTypeDef GPIO_InitLED;
-USART_InitTypeDef USART_InitTransmit;                 //change1
+EXTI_InitTypeDef EXTI_InitSwitch;
+NVIC_InitTypeDef NVIC_InitSwitch;
+int i=0;
 
-void msDelay(__IO  uint32_t count);
-//void usart1PA(void);
-void usart1PB(void);
-void usart2PA(void);
-void usart2PD(void);
-void usart3PB(void);
-void usart3PC(void);
-void usart3PD(void);
-//void usart6PC(void);
+void msDelay(__IO uint32_t count);
 
 int main(void)
 {
@@ -19,27 +13,54 @@ int main(void)
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB,ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC,ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD,ENABLE);
-
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG,ENABLE);
 
 	GPIO_InitLED.GPIO_Mode=GPIO_Mode_OUT;
 	GPIO_InitLED.GPIO_OType=GPIO_OType_PP;
-	GPIO_InitLED.GPIO_Pin=GPIO_Pin_12;
+	GPIO_InitLED.GPIO_Pin=GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
 	GPIO_InitLED.GPIO_PuPd=GPIO_PuPd_NOPULL;
 	GPIO_InitLED.GPIO_Speed=GPIO_Speed_50MHz;
 	GPIO_Init(GPIOD,&GPIO_InitLED);
 
-	usart3PD();
+	GPIO_InitLED.GPIO_Mode=GPIO_Mode_IN;
+	GPIO_InitLED.GPIO_OType=GPIO_OType_PP;
+	GPIO_InitLED.GPIO_Pin=GPIO_Pin_1;
+	GPIO_InitLED.GPIO_PuPd=GPIO_PuPd_DOWN;
+	GPIO_InitLED.GPIO_Speed=GPIO_Speed_50MHz;
+	GPIO_Init(GPIOA,&GPIO_InitLED);
+
+	SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA,EXTI_PinSource1);
+
+	EXTI_InitSwitch.EXTI_Line=EXTI_Line1;
+	EXTI_InitSwitch.EXTI_LineCmd=ENABLE;
+	EXTI_InitSwitch.EXTI_Mode=EXTI_Mode_Interrupt;
+	EXTI_InitSwitch.EXTI_Trigger=EXTI_Trigger_Rising_Falling;
+	EXTI_Init(&EXTI_InitSwitch);
+
+	NVIC_InitSwitch.NVIC_IRQChannel=EXTI1_IRQn;
+	NVIC_InitSwitch.NVIC_IRQChannelCmd=ENABLE;
+	NVIC_InitSwitch.NVIC_IRQChannelPreemptionPriority=1;
+	NVIC_InitSwitch.NVIC_IRQChannelSubPriority=0;
+	NVIC_Init(&NVIC_InitSwitch);
 
 	while(1)
 	{
-		GPIO_WriteBit(GPIOD,GPIO_Pin_12,Bit_SET);
-		USART_SendData(USART3,'a');
-		while(USART_GetFlagStatus(USART3,USART_FLAG_TXE)!=SET){};
-		msDelay(16800000);
-		GPIO_WriteBit(GPIOD,GPIO_Pin_12,Bit_RESET);
-		USART_SendData(USART3,'b');
-		while(USART_GetFlagStatus(USART3,USART_FLAG_TXE)!=SET){};
-		msDelay(16800000);
+		if(i==1)
+		{
+			GPIO_WriteBit(GPIOD,GPIO_Pin_14 | GPIO_Pin_15, Bit_RESET);
+			GPIO_WriteBit(GPIOD,GPIO_Pin_12 | GPIO_Pin_13, Bit_SET);
+			msDelay(16800000);
+			GPIO_WriteBit(GPIOD,GPIO_Pin_12 | GPIO_Pin_13, Bit_RESET);
+			msDelay(16800000);
+		}
+		else
+		{
+			GPIO_WriteBit(GPIOD,GPIO_Pin_12 | GPIO_Pin_13, Bit_RESET);
+			GPIO_WriteBit(GPIOD,GPIO_Pin_14 | GPIO_Pin_15, Bit_SET);
+			msDelay(16800000);
+			GPIO_WriteBit(GPIOD,GPIO_Pin_14 | GPIO_Pin_15, Bit_RESET);
+			msDelay(16800000);
+		}
 	}
 }
 
@@ -48,141 +69,20 @@ void msDelay(__IO uint32_t count)
 	while(count--);
 }
 
-void usart1PB(void)
+void EXTI1_IRQHandler(void)
 {
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1,ENABLE);
+	msDelay(168000);
+	if(EXTI_GetITStatus(EXTI_Line1)!=RESET)
+	{
 
-			GPIO_PinAFConfig(GPIOB,GPIO_PinSource6,GPIO_AF_USART1);
-
-				GPIO_InitLED.GPIO_Mode=GPIO_Mode_AF;
-				GPIO_InitLED.GPIO_OType=GPIO_OType_PP;
-				GPIO_InitLED.GPIO_Pin=GPIO_Pin_6;
-				GPIO_InitLED.GPIO_PuPd=GPIO_PuPd_NOPULL;
-				GPIO_InitLED.GPIO_Speed=GPIO_Speed_50MHz;
-				GPIO_Init(GPIOB,&GPIO_InitLED);
-
-				USART_InitTransmit.USART_BaudRate=9600;
-				USART_InitTransmit.USART_HardwareFlowControl=USART_HardwareFlowControl_None;
-				USART_InitTransmit.USART_Mode = USART_Mode_Tx;
-				USART_InitTransmit.USART_Parity=USART_Parity_No;
-				USART_InitTransmit.USART_WordLength=USART_WordLength_8b;
-				USART_InitTransmit.USART_StopBits=USART_StopBits_1;
-				USART_Init(USART1,&USART_InitTransmit);
-				USART_Cmd(USART1,ENABLE);
-}
-
-void usart2PA(void)
-{
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2,ENABLE);
-
-		GPIO_PinAFConfig(GPIOA,GPIO_PinSource2,GPIO_AF_USART2);
-
-			GPIO_InitLED.GPIO_Mode=GPIO_Mode_AF;
-			GPIO_InitLED.GPIO_OType=GPIO_OType_PP;
-			GPIO_InitLED.GPIO_Pin=GPIO_Pin_2;
-			GPIO_InitLED.GPIO_PuPd=GPIO_PuPd_NOPULL;
-			GPIO_InitLED.GPIO_Speed=GPIO_Speed_50MHz;
-			GPIO_Init(GPIOA,&GPIO_InitLED);
-
-			USART_InitTransmit.USART_BaudRate=9600;
-			USART_InitTransmit.USART_HardwareFlowControl=USART_HardwareFlowControl_None;
-			USART_InitTransmit.USART_Mode = USART_Mode_Tx;
-			USART_InitTransmit.USART_Parity=USART_Parity_No;
-			USART_InitTransmit.USART_WordLength=USART_WordLength_8b;
-			USART_InitTransmit.USART_StopBits=USART_StopBits_1;
-			USART_Init(USART2,&USART_InitTransmit);
-			USART_Cmd(USART2,ENABLE);
-}
-
-void usart2PD(void)
-{
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2,ENABLE);
-
-			GPIO_PinAFConfig(GPIOD,GPIO_PinSource5,GPIO_AF_USART2);
-
-				GPIO_InitLED.GPIO_Mode=GPIO_Mode_AF;
-				GPIO_InitLED.GPIO_OType=GPIO_OType_PP;
-				GPIO_InitLED.GPIO_Pin=GPIO_Pin_5;
-				GPIO_InitLED.GPIO_PuPd=GPIO_PuPd_NOPULL;
-				GPIO_InitLED.GPIO_Speed=GPIO_Speed_50MHz;
-				GPIO_Init(GPIOD,&GPIO_InitLED);
-
-				USART_InitTransmit.USART_BaudRate=9600;
-				USART_InitTransmit.USART_HardwareFlowControl=USART_HardwareFlowControl_None;
-				USART_InitTransmit.USART_Mode = USART_Mode_Tx;
-				USART_InitTransmit.USART_Parity=USART_Parity_No;
-				USART_InitTransmit.USART_WordLength=USART_WordLength_8b;
-				USART_InitTransmit.USART_StopBits=USART_StopBits_1;
-				USART_Init(USART2,&USART_InitTransmit);
-				USART_Cmd(USART2,ENABLE);
-
-}
-
-void usart3PB(void)
-{
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3,ENABLE);
-
-	GPIO_PinAFConfig(GPIOB,GPIO_PinSource10,GPIO_AF_USART3);
-
-		GPIO_InitLED.GPIO_Mode=GPIO_Mode_AF;
-		GPIO_InitLED.GPIO_OType=GPIO_OType_PP;
-		GPIO_InitLED.GPIO_Pin=GPIO_Pin_10;
-		GPIO_InitLED.GPIO_PuPd=GPIO_PuPd_NOPULL;
-		GPIO_InitLED.GPIO_Speed=GPIO_Speed_50MHz;
-		GPIO_Init(GPIOB,&GPIO_InitLED);
-
-		USART_InitTransmit.USART_BaudRate=9600;
-		USART_InitTransmit.USART_HardwareFlowControl=USART_HardwareFlowControl_None;
-		USART_InitTransmit.USART_Mode = USART_Mode_Tx;
-		USART_InitTransmit.USART_Parity=USART_Parity_No;
-		USART_InitTransmit.USART_WordLength=USART_WordLength_8b;
-		USART_InitTransmit.USART_StopBits=USART_StopBits_1;
-		USART_Init(USART3,&USART_InitTransmit);
-		USART_Cmd(USART3,ENABLE);
-}
-
-void usart3PC(void)
-{
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3,ENABLE);
-
-	GPIO_PinAFConfig(GPIOC,GPIO_PinSource10,GPIO_AF_USART3);
-
-		GPIO_InitLED.GPIO_Mode=GPIO_Mode_AF;
-		GPIO_InitLED.GPIO_OType=GPIO_OType_PP;
-		GPIO_InitLED.GPIO_Pin=GPIO_Pin_10;
-		GPIO_InitLED.GPIO_PuPd=GPIO_PuPd_NOPULL;
-		GPIO_InitLED.GPIO_Speed=GPIO_Speed_50MHz;
-		GPIO_Init(GPIOC,&GPIO_InitLED);
-
-		USART_InitTransmit.USART_BaudRate=9600;
-		USART_InitTransmit.USART_HardwareFlowControl=USART_HardwareFlowControl_None;
-		USART_InitTransmit.USART_Mode = USART_Mode_Tx;
-		USART_InitTransmit.USART_Parity=USART_Parity_No;
-		USART_InitTransmit.USART_WordLength=USART_WordLength_8b;
-		USART_InitTransmit.USART_StopBits=USART_StopBits_1;
-		USART_Init(USART3,&USART_InitTransmit);
-		USART_Cmd(USART3,ENABLE);
-}
-
-void usart3PD(void)
-{
-   	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3,ENABLE);
-
-	GPIO_PinAFConfig(GPIOD,GPIO_PinSource8,GPIO_AF_USART3);
-
-		GPIO_InitLED.GPIO_Mode=GPIO_Mode_AF;
-		GPIO_InitLED.GPIO_OType=GPIO_OType_PP;
-		GPIO_InitLED.GPIO_Pin=GPIO_Pin_8;
-		GPIO_InitLED.GPIO_PuPd=GPIO_PuPd_NOPULL;
-		GPIO_InitLED.GPIO_Speed=GPIO_Speed_50MHz;
-		GPIO_Init(GPIOD,&GPIO_InitLED);
-
-		USART_InitTransmit.USART_BaudRate=9600;
-		USART_InitTransmit.USART_HardwareFlowControl=USART_HardwareFlowControl_None;
-		USART_InitTransmit.USART_Mode = USART_Mode_Tx;
-		USART_InitTransmit.USART_Parity=USART_Parity_No;
-		USART_InitTransmit.USART_WordLength=USART_WordLength_8b;
-		USART_InitTransmit.USART_StopBits=USART_StopBits_1;
-		USART_Init(USART3,&USART_InitTransmit);
-		USART_Cmd(USART3,ENABLE);
+	if(i==0)
+	{
+		i=1;
+	}
+	else
+	{
+		i=0;
+	}
+	}
+	EXTI_ClearITPendingBit(EXTI_Line1);
 }
