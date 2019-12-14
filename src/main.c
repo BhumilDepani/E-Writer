@@ -1,11 +1,13 @@
 #include "stm32f4xx.h"
 
-GPIO_InitTypeDef GPIO_InitLED;
-EXTI_InitTypeDef EXTI_InitSwitch;
-NVIC_InitTypeDef NVIC_InitSwitch;
-int i=0;
+GPIO_InitTypeDef GPIO_InitSwitch;
+USART_InitTypeDef USART_InitReceiver;
+NVIC_InitTypeDef NVIC_InitUsart;
 
 void msDelay(__IO uint32_t count);
+
+uint16_t ch;
+int i=0;
 
 int main(void)
 {
@@ -13,39 +15,43 @@ int main(void)
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB,ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC,ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD,ENABLE);
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG,ENABLE);
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3,ENABLE);
 
-	GPIO_InitLED.GPIO_Mode=GPIO_Mode_OUT;
-	GPIO_InitLED.GPIO_OType=GPIO_OType_PP;
-	GPIO_InitLED.GPIO_Pin=GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
-	GPIO_InitLED.GPIO_PuPd=GPIO_PuPd_NOPULL;
-	GPIO_InitLED.GPIO_Speed=GPIO_Speed_50MHz;
-	GPIO_Init(GPIOD,&GPIO_InitLED);
+	GPIO_InitSwitch.GPIO_Mode=GPIO_Mode_OUT;
+	GPIO_InitSwitch.GPIO_OType=GPIO_OType_PP;
+	GPIO_InitSwitch.GPIO_Pin=GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
+	GPIO_InitSwitch.GPIO_PuPd=GPIO_PuPd_NOPULL;
+	GPIO_InitSwitch.GPIO_Speed=GPIO_Speed_50MHz;
+	GPIO_Init(GPIOD,&GPIO_InitSwitch);
 
-	GPIO_InitLED.GPIO_Mode=GPIO_Mode_IN;
-	GPIO_InitLED.GPIO_OType=GPIO_OType_PP;
-	GPIO_InitLED.GPIO_Pin=GPIO_Pin_1;
-	GPIO_InitLED.GPIO_PuPd=GPIO_PuPd_DOWN;
-	GPIO_InitLED.GPIO_Speed=GPIO_Speed_50MHz;
-	GPIO_Init(GPIOA,&GPIO_InitLED);
+	GPIO_PinAFConfig(GPIOD,GPIO_PinSource9,GPIO_AF_USART3);
+	GPIO_InitSwitch.GPIO_Mode=GPIO_Mode_AF;
+	GPIO_InitSwitch.GPIO_OType=GPIO_OType_PP;
+	GPIO_InitSwitch.GPIO_Pin=GPIO_Pin_9;
+	GPIO_InitSwitch.GPIO_PuPd=GPIO_PuPd_DOWN;
+	GPIO_InitSwitch.GPIO_Speed=GPIO_Speed_50MHz;
+	GPIO_Init(GPIOD,&GPIO_InitSwitch);
 
-	SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA,EXTI_PinSource1);
+	USART_InitReceiver.USART_BaudRate=9600;
+	USART_InitReceiver.USART_HardwareFlowControl=USART_HardwareFlowControl_None;
+	USART_InitReceiver.USART_Mode=USART_Mode_Rx;
+	USART_InitReceiver.USART_Parity=USART_Parity_No;
+	USART_InitReceiver.USART_StopBits=USART_StopBits_1;
+	USART_InitReceiver.USART_WordLength=USART_WordLength_8b;
+	USART_Init(USART3,&USART_InitReceiver);
+	USART_Cmd(USART3,ENABLE);
 
-	EXTI_InitSwitch.EXTI_Line=EXTI_Line1;
-	EXTI_InitSwitch.EXTI_LineCmd=ENABLE;
-	EXTI_InitSwitch.EXTI_Mode=EXTI_Mode_Interrupt;
-	EXTI_InitSwitch.EXTI_Trigger=EXTI_Trigger_Rising_Falling;
-	EXTI_Init(&EXTI_InitSwitch);
+	USART_ITConfig(USART3,USART_IT_RXNE,ENABLE);
 
-	NVIC_InitSwitch.NVIC_IRQChannel=EXTI1_IRQn;
-	NVIC_InitSwitch.NVIC_IRQChannelCmd=ENABLE;
-	NVIC_InitSwitch.NVIC_IRQChannelPreemptionPriority=1;
-	NVIC_InitSwitch.NVIC_IRQChannelSubPriority=0;
-	NVIC_Init(&NVIC_InitSwitch);
+	NVIC_InitUsart.NVIC_IRQChannel=USART3_IRQn;
+	NVIC_InitUsart.NVIC_IRQChannelCmd=ENABLE;
+	NVIC_InitUsart.NVIC_IRQChannelPreemptionPriority=0;
+	NVIC_InitUsart.NVIC_IRQChannelSubPriority=0;
+	NVIC_Init(&NVIC_InitUsart);
 
 	while(1)
 	{
-		if(i==1)
+		if(i==0)
 		{
 			GPIO_WriteBit(GPIOD,GPIO_Pin_14 | GPIO_Pin_15, Bit_RESET);
 			GPIO_WriteBit(GPIOD,GPIO_Pin_12 | GPIO_Pin_13, Bit_SET);
@@ -69,20 +75,19 @@ void msDelay(__IO uint32_t count)
 	while(count--);
 }
 
-void EXTI1_IRQHandler(void)
+void USART3_IRQHandler(void)
 {
-	msDelay(168000);
-	if(EXTI_GetITStatus(EXTI_Line1)!=RESET)
+	if(USART_GetITStatus(USART3,USART_IT_RXNE)==SET)
 	{
-
-	if(i==0)
-	{
-		i=1;
+		ch=USART_ReceiveData(USART3);
+		if(ch=='A')
+		{
+			i=0;
+		}
+		else
+		{
+			i=1;
+		}
 	}
-	else
-	{
-		i=0;
-	}
-	}
-	EXTI_ClearITPendingBit(EXTI_Line1);
+	USART_ClearITPendingBit(USART3, USART_IT_RXNE);
 }
