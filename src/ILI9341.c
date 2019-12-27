@@ -1,12 +1,16 @@
 #include "ILI9341.h"
 
+void msDelay(__IO uint32_t count);
+
+GPIO_InitTypeDef GPIO_InitPins;
+
 void TFT_init()
 {
     TFT_GPIO_init();
 
     TFT_reset();
     TFT_write(ILI9341_RESET, CMD);
-    delay_ms(60);
+    msDelay(60);
 
     TFT_write(ILI9341_DISPLAY_OFF, CMD);
 
@@ -121,7 +125,7 @@ void TFT_init()
     TFT_write(0x0F, DAT);
 
     TFT_write(ILI9341_SLEEP_OUT, CMD);
-    delay_ms(100);
+    msDelay(100);
 
     TFT_write(ILI9341_DISPLAY_ON, CMD);
     TFT_write(ILI9341_GRAM, CMD);
@@ -130,46 +134,77 @@ void TFT_init()
 
 void TFT_GPIO_init()
 {
-    TFT_port_config_high = 0xFF;
-    TFT_port_config_low = 0xFF;
+    /*TFT_port_config_high = 0xFF;
+    TFT_port_config_low = 0xFF;*/
 
-    TFT_RST_pin_dir = output;
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA,ENABLE);
+
+    GPIO_InitPins.GPIO_Mode=GPIO_Mode_OUT;                 //for pins RST,CS,WR,RS
+    GPIO_InitPins.GPIO_OType=GPIO_OType_PP;
+    GPIO_InitPins.GPIO_Pin= GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
+    GPIO_InitPins.GPIO_PuPd=GPIO_PuPd_DOWN;
+    GPIO_InitPins.GPIO_Speed=GPIO_Speed_50MHz;
+    GPIO_Init(GPIOA,&GPIO_InitPins);
+
+
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD,ENABLE);
+
+    GPIO_InitPins.GPIO_Mode=GPIO_Mode_OUT;                 //for pins RST,CS,WR,RS
+    GPIO_InitPins.GPIO_OType=GPIO_OType_PP;
+    GPIO_InitPins.GPIO_Pin= GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4;
+    GPIO_InitPins.GPIO_PuPd=GPIO_PuPd_DOWN;
+    GPIO_InitPins.GPIO_Speed=GPIO_Speed_50MHz;
+    GPIO_Init(GPIOD,&GPIO_InitPins);
+
+   /* TFT_RST_pin_dir = output;
     TFT_CS_pin_dir = output;
     TFT_WR_pin_dir = output;
-    TFT_RS_pin_dir = output;
+    TFT_RS_pin_dir = output;*/
 
-    delay_ms(10);
+    msDelay(10);
 }
 
 
 void TFT_reset()
 {
-    TFT_RST_pin = low;
-    delay_ms(15);
-    TFT_RST_pin = high;
-    delay_ms(15);
+    GPIO_WriteBit(GPIOD,TFT_RST_Pin,RESET);
+    msDelay(15);
+    GPIO_WriteBit(GPIOD,TFT_RST_Pin,SET);
+    msDelay(15);
 }
 
 
 void TFT_write_bus(unsigned int value)
 {
-    TFT_data_out_port_high = (value >> 8);
-    TFT_data_out_port_low = (value & 0x00FF);
-
-    TFT_WR_pin = low;
-    TFT_WR_pin = high;
+    //TFT_data_out_port_high = (value >> 8);
+    //TFT_data_out_port_low = (value & 0x00FF);
+    GPIOA -> ODR =value;
+    /*TFT_WR_pin = low;
+    TFT_WR_pin = high;*/
+    GPIO_WriteBit(GPIOD,TFT_WR_Pin,RESET);
+    GPIO_WriteBit(GPIOD,TFT_WR_Pin,SET);
 }
 
 
 void TFT_write(unsigned int value, unsigned char mode)
 {
-    TFT_RS_pin = mode;
-    TFT_CS_pin = low;
+    //TFT_RS_pin = mode;
+	if(mode==DAT)
+	{
+		GPIO_WriteBit(GPIOD,TFT_RS_Pin,SET);
+	}
+	else
+	{
+		GPIO_WriteBit(GPIOD,TFT_RS_Pin,RESET);
+	}
+    //TFT_CS_pin = low;
+    GPIO_WriteBit(GPIOD,TFT_CS_Pin,RESET);
     TFT_write_bus(value);
-    TFT_CS_pin = high;
+    //TFT_CS_pin = high;
+    GPIO_WriteBit(GPIOD,TFT_CS_Pin,SET);
 }
 
-
+/*
 void TFT_write_REG_DATA(unsigned int reg, unsigned int data_value)
 {
     TFT_write(reg, CMD);
@@ -964,3 +999,4 @@ void Draw_BMP(signed int x_pos1, signed int y_pos1, signed int x_pos2, signed in
          TFT_write(*bitmap++, DAT);
      }
 }
+*/

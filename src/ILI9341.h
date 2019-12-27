@@ -1,3 +1,5 @@
+#include "stm32f4xx.h"
+
 //#define TFT_data_out_port_low                                                            PORTC
 //#define TFT_data_out_port_high                                                           PORTA
 
@@ -7,10 +9,11 @@
 //#define TFT_port_config_low                                                              DDRC
 //#define TFT_port_config_high                                                             DDRA
 
-//#define TFT_RST_pin                                                                      PORTG0_bit
-//#define TFT_CS_pin                                                                       PORTG1_bit
-//#define TFT_WR_pin                                                                       PORTG2_bit
-//#define TFT_RS_pin                                                                       PORTD7_bit
+#define TFT_RS_Pin                        GPIO_Pin_0   //This pin is connected to RS pin of LCD
+#define TFT_CS_Pin                        GPIO_Pin_1   //This pin is connected to CS pin of LCD
+#define TFT_WR_Pin                        GPIO_Pin_2   //This pin is connected to WR pin of LCD
+#define TFT_RD_Pin                        GPIO_Pin_3   //This pin is connected to RD pin of LCD
+#define TFT_RST_Pin						  GPIO_Pin_4   //This pin is connected to REST pin of LCD
 
 //TFT_RD_pin pull up 3.3V
 

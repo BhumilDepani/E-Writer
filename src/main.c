@@ -5,6 +5,7 @@ void msDelay(__IO  uint32_t count);
 
 int main(void)
 {
+	TFT_init();
 	while(1)
 	{
 
@@ -13,5 +14,6 @@ int main(void)
 
 void msDelay(__IO uint32_t count)
 {
-		while(count--);
+	uint32_t number=count*16800;
+		while(number--);
 }
