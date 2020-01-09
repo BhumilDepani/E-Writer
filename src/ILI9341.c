@@ -1,20 +1,26 @@
 #include "ILI9341.h"
 
 void msDelay(__IO uint32_t count);
+void usDelay(__IO  uint16_t count);
 
 GPIO_InitTypeDef GPIO_InitPins;
+
+//unsigned int MAX_X,MAX_Y;
 
 void TFT_init()
 {
     TFT_GPIO_init();
 
     TFT_reset();
+    msDelay(10);
     TFT_write(ILI9341_RESET, CMD);
     msDelay(60);
 
-    TFT_write(ILI9341_DISPLAY_OFF, CMD);
+  //  TFT_write(ILI9341_DISPLAY_OFF, CMD);
 
-    TFT_write(ILI9341_POWERA, CMD);
+    TFT_write(ILI9341_ENTER_SLEEP_MODE, CMD);
+
+   /* TFT_write(ILI9341_POWERA, CMD);
     TFT_write(0x39, DAT);
     TFT_write(0x2C, DAT);
     TFT_write(0x00, DAT);
@@ -24,25 +30,25 @@ void TFT_init()
     TFT_write(ILI9341_POWERB, CMD);
     TFT_write(0x00, DAT);
     TFT_write(0xC1, DAT);
-    TFT_write(0x30, DAT);
+    TFT_write(0x30, DAT);*/
 
-    TFT_write(ILI9341_DTCA, CMD);
+    /*TFT_write(ILI9341_DTCA, CMD);
     TFT_write(0x85, DAT);
     TFT_write(0x00, DAT);
     TFT_write(0x78, DAT);
 
     TFT_write(ILI9341_DTCB, CMD);
     TFT_write(0x00, DAT);
-    TFT_write(0x00, DAT);
+    TFT_write(0x00, DAT);*/
 
-    TFT_write(ILI9341_POWER_SEQ, CMD);
+   /* TFT_write(ILI9341_POWER_SEQ, CMD);
     TFT_write(0x64, DAT);
     TFT_write(0x03, DAT);
     TFT_write(0x12, DAT);
     TFT_write(0x81, DAT);
 
     TFT_write(ILI9341_PRC, CMD);
-    TFT_write(0x20, DAT);
+    TFT_write(0x20, DAT);*/
 
     TFT_write(ILI9341_POWER1, CMD);
     TFT_write(0x23, DAT);
@@ -138,23 +144,24 @@ void TFT_GPIO_init()
     TFT_port_config_low = 0xFF;*/
 
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA,ENABLE);
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB,ENABLE);
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC,ENABLE);
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD,ENABLE);
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE,ENABLE);
 
     GPIO_InitPins.GPIO_Mode=GPIO_Mode_OUT;                 //for pins RST,CS,WR,RS
     GPIO_InitPins.GPIO_OType=GPIO_OType_PP;
     GPIO_InitPins.GPIO_Pin= GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
-    GPIO_InitPins.GPIO_PuPd=GPIO_PuPd_DOWN;
+    //GPIO_InitPins.GPIO_PuPd=GPIO_PuPd_DOWN;
     GPIO_InitPins.GPIO_Speed=GPIO_Speed_50MHz;
-    GPIO_Init(GPIOA,&GPIO_InitPins);
-
-
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD,ENABLE);
+    GPIO_Init(Sixteen_Port,&GPIO_InitPins);
 
     GPIO_InitPins.GPIO_Mode=GPIO_Mode_OUT;                 //for pins RST,CS,WR,RS
     GPIO_InitPins.GPIO_OType=GPIO_OType_PP;
-    GPIO_InitPins.GPIO_Pin= GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4;
-    GPIO_InitPins.GPIO_PuPd=GPIO_PuPd_DOWN;
+    GPIO_InitPins.GPIO_Pin= TFT_RS_Pin | TFT_WR_Pin | TFT_RD_Pin | TFT_CS_Pin | TFT_RST_Pin;
+   // GPIO_InitPins.GPIO_PuPd=GPIO_PuPd_DOWN;
     GPIO_InitPins.GPIO_Speed=GPIO_Speed_50MHz;
-    GPIO_Init(GPIOD,&GPIO_InitPins);
+    GPIO_Init(Signal_Port,&GPIO_InitPins);
 
    /* TFT_RST_pin_dir = output;
     TFT_CS_pin_dir = output;
@@ -167,41 +174,45 @@ void TFT_GPIO_init()
 
 void TFT_reset()
 {
-    GPIO_WriteBit(GPIOD,TFT_RST_Pin,RESET);
+    GPIO_WriteBit(Signal_Port,TFT_RST_Pin,RESET);
     msDelay(15);
-    GPIO_WriteBit(GPIOD,TFT_RST_Pin,SET);
+    GPIO_WriteBit(Signal_Port,TFT_RST_Pin,SET);
     msDelay(15);
 }
 
 
-void TFT_write_bus(unsigned int value)
+void TFT_write_bus(uint16_t value)
 {
     //TFT_data_out_port_high = (value >> 8);
     //TFT_data_out_port_low = (value & 0x00FF);
-    GPIOA -> ODR =value;
+    Sixteen_Port -> ODR =value;
+    usDelay(2);
     /*TFT_WR_pin = low;
     TFT_WR_pin = high;*/
-    GPIO_WriteBit(GPIOD,TFT_WR_Pin,RESET);
-    GPIO_WriteBit(GPIOD,TFT_WR_Pin,SET);
+    GPIO_WriteBit(Signal_Port,TFT_RD_Pin,SET);
+    usDelay(2);
+    GPIO_WriteBit(Signal_Port,TFT_WR_Pin,SET);
+    usDelay(2);
+    GPIO_WriteBit(Signal_Port,TFT_WR_Pin,RESET);
 }
 
 
-void TFT_write(unsigned int value, unsigned char mode)
+void TFT_write(uint16_t value, uint8_t mode)
 {
     //TFT_RS_pin = mode;
 	if(mode==DAT)
 	{
-		GPIO_WriteBit(GPIOD,TFT_RS_Pin,SET);
+		GPIO_WriteBit(Signal_Port,TFT_RS_Pin,SET);
 	}
 	else
 	{
-		GPIO_WriteBit(GPIOD,TFT_RS_Pin,RESET);
+		GPIO_WriteBit(Signal_Port,TFT_RS_Pin,RESET);
 	}
     //TFT_CS_pin = low;
-    GPIO_WriteBit(GPIOD,TFT_CS_Pin,RESET);
+    GPIO_WriteBit(Signal_Port,TFT_CS_Pin,RESET);
     TFT_write_bus(value);
     //TFT_CS_pin = high;
-    GPIO_WriteBit(GPIOD,TFT_CS_Pin,SET);
+    //GPIO_WriteBit(Signal_Port,TFT_CS_Pin,SET);
 }
 
 /*
@@ -253,8 +264,8 @@ void TFT_set_rotation(unsigned char value)
     }
 }
 
-
-void TFT_set_display_window(unsigned int x_pos1, unsigned int y_pos1, unsigned int x_pos2, unsigned int y_pos2)
+*/
+void TFT_set_display_window(uint16_t x_pos1, uint16_t y_pos1, uint16_t x_pos2, uint16_t y_pos2)
 {
     TFT_write(ILI9341_COLUMN_ADDR, CMD);
     TFT_write((x_pos1 >> 8), DAT);
@@ -272,20 +283,20 @@ void TFT_set_display_window(unsigned int x_pos1, unsigned int y_pos1, unsigned i
 }
 
 
-void TFT_fill(unsigned int colour)
+void TFT_fill(uint16_t colour)
 {
     unsigned long index = pixels;
 
-    TFT_set_display_window(0, 0, (MAX_X - 1), (MAX_Y - 1));
+    TFT_set_display_window(0, 0, (X_MAX - 1), (Y_MAX - 1));
 
     while(index)
     {
        TFT_write(colour, DAT);
        index--;
-    };
+    }
 }
 
-
+/*
 void TFT_fill_area(signed int x1, signed int y1, signed int x2, signed int y2, unsigned int colour)
 {
     unsigned long index = 0x00000000;
