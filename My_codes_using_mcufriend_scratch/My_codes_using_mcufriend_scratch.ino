@@ -2,9 +2,12 @@
 MCUFRIEND_kbv tft;       // hard-wired for UNO shields anyway.
 #include "touchScreen.h"
 
-char *name = "Please Calibrate.";  //edit name of shield
-const int XP=6,XM=A2,YP=A1,YM=7; //ID=0x9341
+char *name = "Welcome To FLASHBOOK";  //edit name of shield
+const int XP=6,YM=7; //ID=0x9341
 const int TS_LEFT=907,TS_RT=136,TS_TOP=942,TS_BOT=139;
+
+#define XM A2
+#define YP A1
 
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 TSPoint tp;
@@ -27,28 +30,9 @@ uint8_t Orientation = 0;    //PORTRAIT
 #define YELLOW  0xFFE0
 #define WHITE   0xFFFF
 
-/*void show_Serial(void)
-{
-    Serial.println(F("Most Touch Screens use pins 6, 7, A1, A2"));
-    Serial.println(F("But they can be in ANY order"));
-    Serial.println(F("e.g. right to left or bottom to top"));
-    Serial.println(F("or wrong direction"));
-    Serial.println(F("Edit name and calibration statements\n"));
-    Serial.println(name);
-    Serial.print(F("ID=0x"));
-    Serial.println(ID, HEX);
-    Serial.println("Screen is " + String(tft.width()) + "x" + String(tft.height()));
-    Serial.println("Calibration is: ");
-    Serial.println("LEFT = " + String(TS_LEFT) + " RT  = " + String(TS_RT));
-    Serial.println("TOP  = " + String(TS_TOP)  + " BOT = " + String(TS_BOT));
-    Serial.println("Wiring is always PORTRAIT");
-    Serial.println("YP=" + String(YP)  + " XM=" + String(XM));
-    Serial.println("YM=" + String(YM)  + " XP=" + String(XP));
-}*/
-
 void show_tft(void)
 {
-    tft.setCursor(0, 0);
+    tft.setCursor(0,0);
     tft.setTextSize(1);
     tft.print(F("ID=0x"));
     tft.println(ID, HEX);
@@ -65,7 +49,7 @@ void show_tft(void)
     tft.println("YM=" + String(YM)  + " XP=" + String(XP));
     tft.setTextSize(2);
     tft.setTextColor(RED);
-    tft.setCursor((tft.width() - 48) / 2, (tft.height() * 2) / 4);
+    tft.setCursor((tft.width() - 48) / 2, (tft.height() ) / 2);
     tft.print("EXIT");
     tft.setTextColor(YELLOW, BLACK);
     tft.setCursor(0, (tft.height() * 6) / 8);
@@ -90,7 +74,6 @@ void setup(void)
     ID = tft.readID();
     tft.begin(ID);
     Serial.begin(9600);
-//    show_Serial();
     tft.setRotation(Orientation);
     tft.fillScreen(BLACK);
     show_tft();
